@@ -1,50 +1,24 @@
-var WebSocketServer = require('ws').Server
-, http = require('http')
-, express = require('express')
-, app = express()
-, port = process.env.PORT || 5000;
+'use strict';
 
-// new change server
+const express = require('express');
+const { Server } = require('ws');
 
-app.use(express.static(__dirname + '/'));
+const PORT = process.env.PORT || 3000;
+const INDEX = '/index.html';
 
-var server = http.createServer(app);
+const server = express()
+  .use((req, res) => res.sendFile(INDEX, { root: __dirname }))
+  .listen(PORT, () => console.log(`Listening on ${PORT}`));
 
-server.listen(port);
+const wss = new Server({ server });
 
-var wss = new WebSocketServer({server: server});
-
-//var HOST = location.origin.replace(/^http/, 'ws');
-
-wss.on('connection', function (ws) {
-
-    console.log('client connected');
-
-    ws.on('message', function (message) {
-        console.log(message);
-
-        wss.broadcast(message);
-    });
-
-    ws.send("Server :I'm Ready...");
-    console.log(wss.clients);
-
-
+wss.on('connection', (ws) => {
+  console.log('Client connected');
+  ws.on('close', () => console.log('Client disconnected'));
 });
 
-wss.broadcast = function broadcast(msg) {
-    console.log(msg);
-    wss.clients.forEach(function each(client) {
-        client.send(msg);
-    });
-
-}
-
-wss.addEventListener('hassan', (data) => {
-    // data.data contains your forwarded data
-    console.log(data.data)
-})
-
-wss.on('hassan', function (ws) {
-    ws.send("hassan event");
-});
+setInterval(() => {
+  wss.clients.forEach((client) => {
+    client.send(new Date().toTimeString());
+  });
+}, 1000);
